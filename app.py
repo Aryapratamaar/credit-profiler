@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from generate_profile import generate_profile as generate_ai_profile  # Import dari file terpisah
+from profile_generate import profile_generate
+from profile_parse import profile_parse
 
 app = FastAPI()
 
@@ -9,19 +10,6 @@ class NameInput(BaseModel):
 
 @app.post("/generate-profile")
 def generate(data: NameInput):
-    output = generate_ai_profile(data.name)
-
-    # Cek output mentah
-    lines = output.strip().split("\n")
-    print("DEBUG:", lines)
-
-    parsed = {
-        "name": lines[0].replace("- Nama:", "").strip(),
-        "age": lines[1].replace("- Umur:", "").strip(),
-        "job": lines[2].replace("- Pekerjaan:", "").strip(),
-        "hobbies": [h.strip() for h in lines[3].replace("- Hobi:", "").split(",")],
-        "city": lines[4].replace("- Kota asal:", "").strip(),
-        "personality": lines[5].replace("- Kepribadian:", "").strip()
-    }
-
-    return parsed
+    raw_output = profile_generate(data.name)
+    parsed_result = profile_parse(raw_output)
+    return parsed_result

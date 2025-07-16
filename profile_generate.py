@@ -2,7 +2,7 @@ from ollama import Client
 
 client = Client()
 
-def generate_profile(name: str) -> str:
+def profile_generate(name: str) -> str:
     prompt = f"""
     Buatkan profil singkat tentang seseorang bernama {name}.
     Format:
@@ -13,7 +13,6 @@ def generate_profile(name: str) -> str:
     - Kota asal:
     - Kepribadian:
     """
-
     
     response = client.chat(
         model="mistral",
