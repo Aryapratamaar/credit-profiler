@@ -1,12 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, field_validator, constr
+from typing import List, Annotated
+
+from helper.cleaner import clean_hobbies, clean_city, clean_personality
 from app.generate import profile_generate
 from app.parse import profile_parse
 from app.scoring import calculate_credit_score
-from typing import List, Annotated
 from app.database import SessionLocal, CreditProfile
 from app.label_extractor import classify_label_ai
-from helper.cleaner import clean_hobbies, clean_city, clean_personality
+from app.recommender import generate_whatsapp_recommendation
+
 
 app = FastAPI(title="Credit Profiler API", version="1.0.0")
 
@@ -62,6 +65,36 @@ def manual_profile(data: ManualProfileInput):
             "error": str(e),
             "message": "Gagal menyimpan dari input manual"
         }
+
+@app.get("/suggestion/{id}")
+def get_chat_suggestion(id: int):
+    db = SessionLocal()
+    profile = db.query(CreditProfile).filter(CreditProfile.id == id).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    if not profile.labels:
+        raise HTTPException(status_code=400, detail="Profile does not have labels")
+
+    # Pastikan labels dalam bentuk list
+    if isinstance(profile.labels, str):
+        try:
+            import json
+            labels = json.loads(profile.labels)
+        except:
+            labels = [profile.labels]
+    else:
+        labels = profile.labels
+
+    strategy = generate_whatsapp_recommendation(labels)
+
+    return {
+        "id": profile.id,
+        "name": profile.name,
+        "labels": labels,
+        "whatsapp_strategy": strategy
+    }
 
 # @app.post("/input-profile")
 # def generate_profile(data: NameInput):
