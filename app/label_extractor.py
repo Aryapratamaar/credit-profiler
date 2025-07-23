@@ -1,25 +1,33 @@
 from langchain_ollama import OllamaLLM
 import ast
 
+PREDEFINED_LABELS_HOBBIES = [
+    "culinary", "travel", "tech", "finance", "health", "sport"
+]
+
 def classify_label_ai(profile_data):
     prompt = f"""
-    Tugasmu adalah mengklasifikasikan profil seseorang menjadi maksimal 3 label pendek yang relevan. 
-    Label mencerminkan *minat atau gaya hidup*, bukan tipe umum seperti "orang", "pribadi", atau "manusia".
+    Tugasmu adalah mengklasifikasikan profil seseorang menjadi label pendek yang relevan. 
+    Berikut ini adalah daftar label yang diperbolehkan:
+    {', '.join(PREDEFINED_LABELS_HOBBIES)}
 
-    ⚠️ Jangan buat label umum seperti: "person", "activity", "other", dll. 
-    ⚠️ Fokus pada apa yang terlihat dari hobi, pekerjaan, dan kepribadian.
+    ⚠️ Fokus pada apa yang terlihat dari hobi
 
-    Format: list Python valid, tanpa markdown atau penjelasan.
+    Format: list Python valid, TANPA markdown atau penjelasan atau catatan.
 
     Data:
-    - Hobi: {", ".join(profile_data['hobbies'])}
-    - Kepribadian: {profile_data['personality']}
-    - Pekerjaan: {profile_data['job']}
+    - Hobi: {profile_data['hobbies']}
+
+    Tolong pilih label yang paling sesuai dari daftar tersebut berdasarkan data profil di atas. 
+    ⚠️ Balas hanya dengan format list Python seperti ini: ["label1"]
 
     Jawaban:
     """
-    llm = OllamaLLM(model="gemma:2b")
+    
+    # llm = OllamaLLM(model="gemma:2b")
     # llm = OllamaLLM(model="phi3:mini")
+    # llm = OllamaLLM(model="mistral")
+    llm = OllamaLLM(model="openhermes")
 
     response = llm.invoke(prompt)
 

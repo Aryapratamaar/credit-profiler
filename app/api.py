@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field, field_validator, constr
 from typing import List, Annotated
 
 from helper.cleaner import clean_hobbies, clean_city, clean_personality
-from app.generate import profile_generate
 from app.parse import profile_parse
 from app.scoring import calculate_credit_score
 from app.database import SessionLocal, CreditProfile
@@ -20,16 +19,9 @@ class ManualProfileInput(BaseModel):
     name: Annotated[str, Field(min_length=3, max_length=50, pattern=r"^[A-Za-z\s]+$")]
     age: Annotated[int, Field(ge=17, le=100)]
     job: Annotated[str, Field(min_length=3)]
-    hobbies: Annotated[List[str], Field(min_items=1, max_items=5)]
+    hobbies: Annotated[str, Field(min_length=3)]
     city: Annotated[str, Field(min_length=3)]
     personality: Annotated[str, Field(min_length=5)]
-
-    @field_validator("hobbies")
-    @classmethod
-    def validate_hobbies(cls, v):
-        if any(h.strip() == "" for h in v):
-            raise ValueError("Hobi tidak boleh kosong")
-        return v
 
     @field_validator("personality")
     @classmethod
@@ -77,7 +69,6 @@ def get_chat_suggestion(id: int):
     if not profile.labels:
         raise HTTPException(status_code=400, detail="Profile does not have labels")
 
-    # Pastikan labels dalam bentuk list
     if isinstance(profile.labels, str):
         try:
             import json
@@ -95,28 +86,3 @@ def get_chat_suggestion(id: int):
         "labels": labels,
         "whatsapp_strategy": strategy
     }
-
-# @app.post("/input-profile")
-# def generate_profile(data: NameInput):
-    # """
-    # Input profile and score for a person
-    # """
-    # try:
-    #     raw_output = profile_generate(data.name)
-    #     parsed_result = profile_parse(raw_output)
-    #     labels = classify_label_ai(parsed_result)
-    #     parsed_result["labels"] = labels
-
-    #     credit_score = calculate_credit_score(parsed_result, labels)
-        
-    #     return {
-    #         "profile": parsed_result,
-    #         "credit_analysis": credit_score,
-    #         "raw_ai_output": raw_output
-    #     }
-        
-    # except Exception as e:
-    #     return {
-    #         "error": str(e),
-    #         "message": "Failed to generate profile"
-    #     }

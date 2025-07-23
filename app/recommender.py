@@ -5,6 +5,8 @@ import ast
 
 def generate_whatsapp_recommendation(labels: list) -> dict:
     # llm = Ollama(model="phi3:mini") 
+    # llm = OllamaLLM(model="gamma:2b")
+    # llm = OllamaLLM(model="openhermes")
     llm = OllamaLLM(model="mistral")
 
     prompt = PromptTemplate.from_template("""
