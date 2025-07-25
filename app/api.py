@@ -3,12 +3,14 @@ from pydantic import BaseModel, Field, field_validator, constr
 from typing import List, Annotated
 
 from helper.cleaner import clean_hobbies, clean_city, clean_personality
+
+from app.database import SessionLocal, CreditProfile
+from app.database import SalesRecommendation
+
 from app.parse import profile_parse
 from app.scoring import calculate_credit_score
-from app.database import SessionLocal, CreditProfile
 from app.label_extractor import classify_label_ai
 from app.recommender import generate_whatsapp_recommendation
-
 
 app = FastAPI(title="Credit Profiler API", version="1.0.0")
 
@@ -46,10 +48,36 @@ def manual_profile(data: ManualProfileInput):
         profile_dict["labels"] = labels
 
         credit_score = calculate_credit_score(profile_dict, labels)
+        strategy = generate_whatsapp_recommendation(labels)
+
+        # Simpan ke database
+        db = SessionLocal()
+
+        new_profile = CreditProfile(**{
+            **profile_dict,
+            "labels": labels,
+            "score": credit_score["final_score"],
+            "risk_level": credit_score["risk_level"]
+        })
+        db.add(new_profile)
+        db.commit()
+        db.refresh(new_profile)
+
+        recommendation = SalesRecommendation(
+            profile_id=new_profile.id,
+            do=strategy["do"],
+            dont=strategy["dont"],
+            style=strategy["style"],
+            relevant_products=strategy["relevant_products"],
+            opener=strategy["opener"]
+        )
+        db.add(recommendation)
+        db.commit()
 
         return {
             "profile": profile_dict,
-            "credit_analysis": credit_score
+            "credit_analysis": credit_score,
+            "strategy": strategy
         }
 
     except Exception as e:

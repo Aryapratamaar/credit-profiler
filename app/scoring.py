@@ -58,6 +58,7 @@ def calculate_credit_score(profile_data: dict, labels: list) -> dict:
     # Ensure score doesn't exceed 100
     final_score = min(score, 100)
     
+
     # Simpan data ke database via helper
     save_profile_to_db(profile_data, labels, final_score, get_risk_level(final_score))
 

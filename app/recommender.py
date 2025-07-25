@@ -1,44 +1,49 @@
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import OllamaLLM
-
 import ast
+import re
 
 def generate_whatsapp_recommendation(labels: list) -> dict:
-    # llm = Ollama(model="phi3:mini") 
-    # llm = OllamaLLM(model="gamma:2b")
-    # llm = OllamaLLM(model="openhermes")
-    llm = OllamaLLM(model="mistral")
+    llm = OllamaLLM(model="openhermes")
 
     prompt = PromptTemplate.from_template("""
-    Kamu adalah pakar komunikasi pemasaran via WhatsApp.
+    Kamu adalah asisten penjualan pintar untuk bank yang menawarkan produk kredit via WhatsApp.
 
     Berdasarkan *label minat pribadi* berikut: {labels}
 
-    Tentukan:
-    - 3 hal yang *boleh dilakukan* (Do) saat menawarkan produk kredit via WhatsApp
-    - 3 hal yang *tidak boleh dilakukan* (Don't)
+    Tugasmu:
+    - Sebutkan 3 hal yang *boleh dilakukan* (do) saat menawarkan produk kredit
+    - Sebutkan 3 hal yang *tidak boleh dilakukan* (don't)
+    - Tentukan gaya komunikasi yang cocok (style)
+    - Rekomendasikan 2 produk kredit yang sesuai (relevant_products)
+    - Buat 1 kalimat pembuka WhatsApp yang menarik (opener)
 
-    Fokuskan pendekatan berdasarkan minat nasabah yang tercermin dari label-label tersebut.
-
-    ❌ Jangan gunakan istilah generik seperti "layanan cepat dan mudah", "semua konsumen", atau "chatbot".
-    ✅ Gunakan strategi spesifik, misalnya: "Gunakan contoh benefit cicilan untuk keperluan olahraga outdoor".
-
-    Format jawaban:
+    ⚠️ Format jawaban HARUS seperti ini dan tidak boleh ada penjelasan tambahan:
     {{
-    "do": ["...", "...", "..."],
-    "dont": ["...", "...", "..."]
+      "do": ["..."],
+      "dont": ["..."],
+      "style": "...",
+      "relevant_products": ["...", "..."],
+      "opener": "..."
     }}
-
-    Jawaban harus valid dalam format Python dictionary. Tidak ada penjelasan tambahan.
     """)
 
     formatted_prompt = prompt.format(labels=", ".join(labels))
     response = llm.invoke(formatted_prompt)
 
     try:
-        return ast.literal_eval(response)
+        # Ambil hanya bagian dictionary
+        match = re.search(r"\{[\s\S]+\}", response)
+        if match:
+            return ast.literal_eval(match.group())
+        else:
+            raise ValueError("Format AI tidak sesuai")
+
     except Exception as e:
         return {
             "do": ["Gagal memproses AI output"],
-            "dont": [str(e)]
+            "dont": [str(e)],
+            "style": "-",
+            "relevant_products": [],
+            "opener": "-"
         }
