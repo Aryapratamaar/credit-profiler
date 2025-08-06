@@ -24,13 +24,17 @@ st.markdown("""
         color: #1f1f1f !important;
         font-weight: 600;
     }
-            
+
+    h1, h2, h3 {
+        color: #1f1f1f !important;
+    }
+                   
     div[data-testid="text_input"]{
         border: 1px solid #e0e0e0 !important;
         border-radius: 6px !important;
         padding: 0.5em !important;  
     }
-            
+    
     .stButton > button {
         background-color: #e46c0a !important;
         color: white !important;
