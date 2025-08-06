@@ -10,7 +10,7 @@ from app.database import SalesRecommendation
 from app.parse import profile_parse
 from app.scoring import calculate_credit_score
 from app.label_extractor import classify_label_ai
-from app.recommender import generate_whatsapp_recommendation
+from app.recommender import generate_whatsapp_recommendation, generate_opener, get_targeted_products
 
 app = FastAPI(title="Credit Profiler API", version="1.0.0")
 
@@ -48,7 +48,6 @@ def manual_profile(data: ManualProfileInput):
         profile_dict["labels"] = labels
 
         credit_score = calculate_credit_score(profile_dict, labels)
-        strategy = generate_whatsapp_recommendation(labels)
 
         # Simpan ke database
         db = SessionLocal()
@@ -63,21 +62,9 @@ def manual_profile(data: ManualProfileInput):
         db.commit()
         db.refresh(new_profile)
 
-        recommendation = SalesRecommendation(
-            profile_id=new_profile.id,
-            do=strategy["do"],
-            dont=strategy["dont"],
-            style=strategy["style"],
-            relevant_products=strategy["relevant_products"],
-            opener=strategy["opener"]
-        )
-        db.add(recommendation)
-        db.commit()
-
         return {
             "profile": profile_dict,
             "credit_analysis": credit_score,
-            "strategy": strategy
         }
 
     except Exception as e:
@@ -85,6 +72,7 @@ def manual_profile(data: ManualProfileInput):
             "error": str(e),
             "message": "Gagal menyimpan dari input manual"
         }
+
 
 @app.get("/suggestion/{id}")
 def get_chat_suggestion(id: int):
@@ -97,6 +85,7 @@ def get_chat_suggestion(id: int):
     if not profile.labels:
         raise HTTPException(status_code=400, detail="Profile does not have labels")
 
+    # Handle label format (list atau string JSON)
     if isinstance(profile.labels, str):
         try:
             import json
@@ -106,11 +95,14 @@ def get_chat_suggestion(id: int):
     else:
         labels = profile.labels
 
+    products = get_targeted_products(labels)
     strategy = generate_whatsapp_recommendation(labels)
+    opener = generate_opener(labels, products)
 
     return {
         "id": profile.id,
         "name": profile.name,
         "labels": labels,
-        "whatsapp_strategy": strategy
+        "products": products,
+        "recommendation": strategy,
     }

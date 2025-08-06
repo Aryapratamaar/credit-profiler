@@ -1,3 +1,4 @@
+from config import SCORING_WEIGHTS
 from app.database import SessionLocal, CreditProfile
 from helper.db_utils import save_profile_to_db
 
@@ -6,171 +7,122 @@ def calculate_credit_score(profile_data: dict, labels: list) -> dict:
     Menghitung credit score berdasarkan profil seseorang
     Score range: 0-100
     """
-    
     score = 0
     score_breakdown = {}
-    
-    # 1. Age scoring (25 points max)
+
+    #Age
     age_text = profile_data.get("age", "")
     age_num = extract_age_number(age_text)
-    
-    if 25 <= age_num <= 45:
-        age_score = 25
-    elif 18 <= age_num <= 60:
-        age_score = 20
-    elif age_num > 60:
-        age_score = 15
-    else:
-        age_score = 5
-    
+    age_score = get_age_score(age_num)
     score += age_score
     score_breakdown["age"] = {"score": age_score}
-    # score_breakdown["age"] = {"score": age_score, "detail": f"Umur {age_num} tahun"}
-    
-    # 2. Job scoring (30 points max)
+
+    #Job
     job = profile_data.get("job", "").lower()
     job_score = calculate_job_score(job)
-    
     score += job_score
     score_breakdown["job"] = {"score": job_score}
-    
-    # 3. Hobbies scoring (20 points max)
+
+    #Hobbies
     hobbies = profile_data.get("hobbies", [])
     hobby_score = calculate_hobby_score(hobbies)
-    
     score += hobby_score
     score_breakdown["hobbies"] = {"score": hobby_score}
-    
-    # 4. City scoring (15 points max)
+
+    #City
     city = profile_data.get("city", "").lower()
     city_score = calculate_city_score(city)
-    
     score += city_score
     score_breakdown["city"] = {"score": city_score}
-    
-    # 5. Personality scoring (10 points max)
+
+    #Personality scoring
     personality = profile_data.get("personality", "").lower()
     personality_score = calculate_personality_score(personality)
-    
     score += personality_score
     score_breakdown["personality"] = {"score": personality_score}
-    
-    # Ensure score doesn't exceed 100
-    final_score = min(score, 100)
-    
 
-    # Simpan data ke database via helper
-    save_profile_to_db(profile_data, labels, final_score, get_risk_level(final_score))
+    final_score = min(score, 100)
+    risk_level = get_risk_level(final_score)
+
+    save_profile_to_db(profile_data, labels, final_score, risk_level)
 
     return {
         "final_score": final_score,
-        "risk_level": get_risk_level(final_score),
+        "risk_level": risk_level,
         "score_breakdown": score_breakdown,
     }
 
+
 def extract_age_number(age_text: str) -> int:
-    """Extract age number from text like '32 tahun'"""
     import re
     numbers = re.findall(r'\d+', age_text)
     return int(numbers[0]) if numbers else 25
 
+def get_age_score(age: int) -> int:
+    max_score = SCORING_WEIGHTS["age"]
+    if 25 <= age <= 45:
+        return max_score
+    elif 18 <= age <= 60:
+        return int(max_score * 0.8)
+    elif age > 60:
+        return int(max_score * 0.6)
+    return int(max_score * 0.2)
+
 def calculate_job_score(job: str) -> int:
-    """Calculate score based on job stability and income potential"""
-    
-    # High stability jobs
-    if any(keyword in job for keyword in ["dokter", "engineer", "dosen", "pegawai negeri", "pns", "manager", "direktur"]):
-        return 30
-    
-    # Medium stability jobs
-    elif any(keyword in job for keyword in ["guru", "perawat", "akuntan", "programmer", "analyst", "konsultan"]):
-        return 25
-    
-    # Self-employed/entrepreneur
-    elif any(keyword in job for keyword in ["wiraswasta", "pengusaha", "freelancer", "owner", "founder"]):
-        return 20
-    
-    # Service jobs
-    elif any(keyword in job for keyword in ["sales", "marketing", "customer", "admin", "sekretaris"]):
-        return 15
-    
-    # Manual labor
-    elif any(keyword in job for keyword in ["sopir", "tukang", "buruh", "kuli", "ojek"]):
-        return 10
-    
-    # Student/unemployed
-    elif any(keyword in job for keyword in ["mahasiswa", "pelajar", "tidak bekerja", "pengangguran", " ", ""]):
-        return 5
-    
-    # Default
-    else:
-        return 15
+    max_score = SCORING_WEIGHTS["job"]
+    job_map = [
+        (30, ["dokter", "engineer", "dosen", "pegawai negeri", "pns", "manager", "direktur"]),
+        (25, ["guru", "perawat", "akuntan", "programmer", "analyst", "konsultan"]),
+        (20, ["wiraswasta", "pengusaha", "freelancer", "owner", "founder"]),
+        (15, ["sales", "marketing", "customer", "admin", "sekretaris"]),
+        (10, ["sopir", "tukang", "buruh", "kuli", "ojek"]),
+        (5, ["mahasiswa", "pelajar", "tidak bekerja", "pengangguran"])
+    ]
+    for score, keywords in job_map:
+        if any(keyword in job for keyword in keywords):
+            return min(score, max_score)
+    return int(max_score * 0.5)  # default score
 
 def calculate_hobby_score(hobbies: list) -> int:
-    """Calculate score based on hobbies (financial responsibility indicators)"""
-    
+    max_score = SCORING_WEIGHTS["hobbies"]
     score = 0
-    
-    # Positive hobbies (show discipline/investment mindset)
-    positive_hobbies = ["membaca", "olahraga", "investasi", "menabung", "berkebun", "memasak", "belajar"]
-    
-    # Expensive hobbies (potential financial burden)
-    expensive_hobbies = ["traveling", "belanja", "shopping", "koleksi", "otomotif", "gadget"]
-    
-    # Neutral hobbies
-    neutral_hobbies = ["musik", "film", "game", "fotografi", "menulis"]
-    
+    positive = ["membaca", "olahraga", "investasi", "menabung", "berkebun", "memasak", "belajar"]
+    expensive = ["traveling", "belanja", "shopping", "koleksi", "otomotif", "gadget"]
+    neutral = ["musik", "film", "game", "fotografi", "menulis"]
+
     for hobby in hobbies:
         hobby_lower = hobby.lower()
-        
-        if any(pos in hobby_lower for pos in positive_hobbies):
+        if any(pos in hobby_lower for pos in positive):
             score += 5
-        elif any(exp in hobby_lower for exp in expensive_hobbies):
+        elif any(exp in hobby_lower for exp in expensive):
             score -= 2
-        elif any(neu in hobby_lower for neu in neutral_hobbies):
+        elif any(neu in hobby_lower for neu in neutral):
             score += 2
-    
-    # Ensure score is between 0-20
-    return max(0, min(score, 20))
+
+    return max(0, min(score, max_score))
 
 def calculate_city_score(city: str) -> int:
-    """Calculate score based on city (economic opportunities)"""
-    
-    # Major cities (high economic activity)
-    if any(major in city for major in ["jakarta", "surabaya", "bandung", "medan", "semarang", "makassar"]):
-        return 15
-    
-    # Medium cities
-    elif any(medium in city for medium in ["yogyakarta", "solo", "malang", "denpasar", "palembang"]):
-        return 12
-    
-    # Small cities/rural
-    else:
-        return 8
+    max_score = SCORING_WEIGHTS["city"]
+    if any(c in city for c in ["jakarta", "surabaya", "bandung", "medan", "semarang", "makassar"]):
+        return max_score
+    elif any(c in city for c in ["yogyakarta", "solo", "malang", "denpasar", "palembang"]):
+        return int(max_score * 0.8)
+    return int(max_score * 0.5)
 
 def calculate_personality_score(personality: str) -> int:
-    """Calculate score based on personality traits"""
-    
-    # Positive traits for credit
-    positive_traits = ["bertanggung jawab", "disiplin", "jujur", "reliable", "stabil", "pekerja keras"]
-    
-    # Negative traits for credit
-    negative_traits = ["impulsif", "boros", "malas", "tidak konsisten", "ceroboh"]
-    
-    score = 5  # Base score
-    
-    for trait in positive_traits:
+    max_score = SCORING_WEIGHTS["personality"]
+    positive = ["bertanggung jawab", "disiplin", "jujur", "reliable", "stabil", "pekerja keras"]
+    negative = ["impulsif", "boros", "malas", "tidak konsisten", "ceroboh"]
+    score = 5
+    for trait in positive:
         if trait in personality:
             score += 2
-    
-    for trait in negative_traits:
+    for trait in negative:
         if trait in personality:
             score -= 3
-    
-    return max(0, min(score, 10))
+    return max(0, min(score, max_score))
 
 def get_risk_level(score: int) -> str:
-    """Determine risk level based on score"""
-    
     if score >= 80:
         return "Very Low Risk"
     elif score >= 65:
@@ -179,7 +131,4 @@ def get_risk_level(score: int) -> str:
         return "Medium Risk"
     elif score >= 35:
         return "High Risk"
-    else:
-        return "Very High Risk"
-    
-
+    return "Very High Risk"

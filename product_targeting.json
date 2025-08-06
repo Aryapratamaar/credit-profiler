@@ -1,0 +1,31 @@
+{
+    "culinary_business": [
+        "BNI KUR (UMKM Kuliner)",
+        "Kredit Modal Usaha Mikro"
+    ],
+    "culinary_enthusiast": [
+        "Kartu Kredit BNI (Promo Makanan)",
+        "BNI Fleksi (Kebutuhan Konsumtif)"
+    ],
+    "travel": [
+        "BNI Fleksi (Dana Liburan)",
+        "Kartu Kredit BNI (Promo Travel & Hotel)"
+    ],
+    "tech": [
+        "Kredit Gadget via BNI Fleksi",
+        "BNI Fleksi (Kebutuhan Teknologi)"
+    ],
+    "finance": [
+        "BNI Fleksi (Dana Serbaguna)",
+        "BNI Griya Multiguna (Refinancing Aset)",
+        "BNI Griya (Pembelian Properti)"
+    ],
+    "health": [
+        "BNI KUR (Klinik / Peralatan Kesehatan)",
+        "BNI Fleksi (Kebutuhan Medis)"
+    ],
+    "sport": [
+        "Kartu Kredit BNI-APLGI (Promo Golf & Merchant Olahraga)",
+        "BNI Fleksi (Alat Olahraga / Gaya Hidup Aktif)"
+    ]
+}
