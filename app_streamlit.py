@@ -85,9 +85,8 @@ st.markdown("""
         background-color: #cc5a08 !important;
     }
 
-    /* Untuk memastikan teks skor dan label terlihat */
     [data-testid="stMetricValue"] {
-        color: #1f1f1f !important;  /* Hitam */
+        color: #1f1f1f !important; 
         font-weight: 700 !important;
     }
 
@@ -101,7 +100,7 @@ st.markdown("""
     }
 
     div.stElementContainer {
-        color: #000 !important;  /* Hitam */
+        color: #000 !important;
     }        
 
     label[data-testid="stWidgetLabel"] p {
@@ -132,17 +131,31 @@ tab1, tab2 = st.tabs(["📝 Input Profil", "💬 Rekomendasi WhatsApp"])
 # Tab 1
 with tab1:
     st.subheader("INPUT DATA NASABAH")
+
+    if "submitted_once" not in st.session_state:
+        st.session_state.submitted_once = False
+    if "form_disabled" not in st.session_state:
+        st.session_state.form_disabled = False
+
     with st.form("profile_form"):
-        name = st.text_input("NAMA")
+        name = st.text_input("NAMA LENGKAP")
         age = st.number_input("UMUR", min_value=17, max_value=60, step=1)
         job = st.text_input("PEKERJAAN")
         hobbies = st.text_input("HOBI")
         city = st.text_input("KOTA")
-        personality = st.text_input("KEPRIBADIAN")
+        personality = st.text_input("DESKRIPSIKAN KEPRIBADIANMU SECARA SINGKAT")
         st.markdown("<br>", unsafe_allow_html=True)
+
         submitted = st.form_submit_button("SUBMIT")
 
-        if submitted:
+    if submitted:
+            # Cegah pengiriman ulang
+            if st.session_state.submitted_once:
+                st.stop()  
+
+            st.session_state.submitted_once = True
+            st.session_state.form_disabled = True
+
             payload = {
                 "name": name,
                 "age": age,
@@ -169,8 +182,15 @@ with tab1:
                     st.success("Profil berhasil dikirim!")
 
                     st.subheader("📊 Hasil Analisis Kredit")
-                    score = data["credit_analysis"]["final_score"]
-                    risk = data["credit_analysis"]["risk_level"]
+                    # score = data["credit_analysis"]["final_score"]
+                    # risk = data["credit_analysis"]["risk_level"]
+
+                    if "credit_analysis" in data:
+                        score = data["credit_analysis"]["final_score"]
+                        risk = data["credit_analysis"]["risk_level"]
+                    else:
+                        score = data.get("score") or data.get("credit_analysis", {}).get("final_score") or 0
+                        risk = data.get("risk_level") or data.get("credit_analysis", {}).get("risk_level")
 
                     col1, col2 = st.columns([0.5, 1])
                     with col1:
@@ -203,12 +223,14 @@ with tab1:
                             "Low Risk": "#c8f7c5",       # Hijau muda
                             "Medium Risk": "#fff3cd",    # Kuning muda
                             "High Risk": "#f8d7da",      # Merah muda
+                            "Very High Risk": "#842029", # Merah tua
                         }
 
                         risk_text_color = {
                             "Low Risk": "#2e7d32",       # Hijau tua
                             "Medium Risk": "#856404",    # Kuning tua
                             "High Risk": "#842029",      # Merah tua
+                            "Very High Risk": "#ffffff", # putih
                         }
 
                         bg_color = risk_badge_color.get(risk, "#eee")
@@ -226,8 +248,13 @@ with tab1:
 
                     st.subheader("📦 Detail Profil & Hasil")
                     st.json(data)
+
+                    # Reset flag untuk submit selanjutnya
+                    st.session_state.submitted_once = False
                 else:
                     st.error(f"Gagal: {response.text}")
+                    st.session_state.submitted_once = False
+                    
 
 # Tab 2
 with tab2:
@@ -264,10 +291,10 @@ with tab2:
             st.subheader("🎯 Produk Relevan")
             st.write("- " + "\n- ".join(result["products"]))
 
-            st.subheader("✅ Yang Boleh Dilakukan (Do)")
+            st.subheader("✅ Disarankan untuk (Do)")
             st.markdown("\n".join([f"- {item}" for item in result["recommendation"]["do"]]))
 
-            st.subheader("❌ Yang Tidak Boleh Dilakukan (Don't)")
+            st.subheader("❌ Tidak disarankan untuk (Don't)")
             st.markdown("\n".join([f"- {item}" for item in result["recommendation"]["dont"]]))
 
             st.subheader("📨 Contoh Opener Chat")

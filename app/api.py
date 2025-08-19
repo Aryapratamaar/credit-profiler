@@ -61,6 +61,8 @@ def manual_profile(data: ManualProfileInput):
         db.add(new_profile)
         db.commit()
         db.refresh(new_profile)
+        
+        profile_dict["id"] = new_profile.id
 
         return {
             "profile": profile_dict,

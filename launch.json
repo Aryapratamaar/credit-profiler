@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Streamlit App",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/Scripts/streamlit", // atau path streamlit-mu
+            "args": [
+                "run",
+                "${workspaceFolder}/app_streamlit.py" // ganti nama file streamlit-mu
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}
