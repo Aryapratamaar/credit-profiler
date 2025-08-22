@@ -1,3 +1,10 @@
+import os
+
+#token
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRES_MINUTES = 30
+
 #DB
 DATABASE_URL = "postgresql://postgres:1234@localhost:5432/credit_profiler"
 

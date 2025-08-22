@@ -44,14 +44,13 @@ def calculate_credit_score(profile_data: dict, labels: list) -> dict:
     final_score = min(score, 100)
     risk_level = get_risk_level(final_score)
 
-    save_profile_to_db(profile_data, labels, final_score, risk_level)
+    # save_profile_to_db(profile_data, labels, final_score, risk_level)
 
     return {
         "final_score": final_score,
         "risk_level": risk_level,
         "score_breakdown": score_breakdown,
     }
-
 
 def extract_age_number(age_text: str) -> int:
     import re

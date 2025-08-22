@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "react-router-dom": "^7.8.1"
+  }
+}
